@@ -1,0 +1,6 @@
+dependencies:
+- name: privacera-base
+  repository: https://amrakshay.github.io/iq-platform/charts/
+  version: 0.9.0
+digest: sha256:fb58f40b7b4c32ca3a4901ecb9cc597270382d94681daf9abe1b2e3d497639bc
+generated: "2025-09-09T18:42:12.216339+05:30"

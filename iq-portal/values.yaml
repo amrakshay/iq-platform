@@ -1,0 +1,77 @@
+# Values passed to base dependency
+base:
+  app:
+    name: "iq-portal"
+    env: "prod"
+    domainName: ""
+
+  image:
+    hub: hub2.privacera.com
+    repository: iq-portal
+    tag: "0.0.1"
+    pullPolicy: Always
+
+  # Docker registry credentials (references shared secret from umbrella chart)
+  imagePullSecrets:
+    - name: privacera-registry-secret
+
+  deployment:
+    enabled: true
+    replicaCount: 1
+    containers:
+      containerPort: 8000
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          enabled: true
+          memory:
+            value: "2Gi"
+          cpu:
+            enabled: true
+            value: "1000m"
+      env:
+        DATABASE_URL: "sqlite+aiosqlite:///database.db"
+      readinessProbe:
+        httpGet:
+          path: /api/healthcheck/status
+      appConf:
+        mountPath: /workdir/iq-portal/cust-conf
+      
+      # Environment variables - non-sensitive configuration
+      env: {}
+        
+      # Sensitive environment variables from secrets  
+      envFromSecret:
+        secretName: "iq-portal-secrets"
+        keys:
+          DATABASE_URL: "database-url"
+
+  service:
+    port: 8000
+
+  externalService:
+    enabled: false
+    port: 8000
+
+  ingress:
+    enabled: false
+
+  serviceAccount:
+    enabled: false
+
+# Secret management configuration
+secrets:
+  # Create secret via Helm (true) or use existing secret (false)
+  create: false
+  
+  # Secret name (used for both create and existing approaches)
+  secretName: "iq-portal-secrets"
+  
+  # Secret data (only used when create=true)
+  # SECURITY WARNING: These values will be visible in Helm values
+  # For production, use external secret management or existing secrets
+  data:
+    databaseUrl: "<REPLACE_WITH_DATABASE_URL>"
+

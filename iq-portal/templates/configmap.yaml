@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.base.app.name }}-conf
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.base.app.name }}
+data:
+  {{- range $path, $content := .Files.Glob "app-conf/*" }}
+  {{ base $path }}: |
+{{ tpl ($content | toString) $ | indent 4 }}
+  {{- end }}

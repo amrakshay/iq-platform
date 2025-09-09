@@ -1,9 +1,33 @@
 apiVersion: v1
 entries:
+  iq-portal:
+  - apiVersion: v2
+    appVersion: 0.0.1
+    created: "2025-09-09T18:46:54.42164+05:30"
+    dependencies:
+    - alias: base
+      name: privacera-base
+      repository: https://amrakshay.github.io/iq-platform/charts/
+      version: 0.9.0
+    description: Helm chart for IQ Portal service
+    digest: 52a712f48f2a74a00a5319c240cc1df0ab16d363516e3c6642be7e85d2ec3363
+    home: https://privacera.com
+    keywords:
+    - iq-portal
+    - ai
+    - analytics
+    maintainers:
+    - email: support@privacera.com
+      name: Privacera Team
+    name: iq-portal
+    type: application
+    urls:
+    - iq-portal-1.0.0.tgz
+    version: 1.0.0
   privacera-base:
   - apiVersion: v2
     appVersion: 0.9.0
-    created: "2025-09-09T18:28:42.56407+05:30"
+    created: "2025-09-09T18:46:54.422772+05:30"
     description: A base helm Chart for all PAIG applications
     digest: d82895e4c7637783a4af7152d8bfb3305fcae3b00b616971bf5d31690240368e
     name: privacera-base
@@ -11,4 +35,4 @@ entries:
     urls:
     - privacera-base-0.9.0.tgz
     version: 0.9.0
-generated: "2025-09-09T18:28:42.561944+05:30"
+generated: "2025-09-09T18:46:54.41911+05:30"

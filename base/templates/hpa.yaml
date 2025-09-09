@@ -1,0 +1,54 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.app.name  }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.app.name  }}
+  minReplicas: {{ .Values.autoscaling.replicaCountMin }}
+  maxReplicas: {{ .Values.autoscaling.replicaCountMax }}
+  metrics:
+  {{- if .Values.autoscaling.memory.enabled }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.memory.averageUtilization }}
+  {{- end }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.cpu.averageUtilization }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behaviour.scaleDown.stabilizationWindowSeconds }}
+      policies:
+      - type: Percent
+        value: {{ .Values.autoscaling.behaviour.scaleDown.policies.value }}
+        periodSeconds: {{ .Values.autoscaling.behaviour.scaleDown.policies.periodSeconds }}
+      {{- range .Values.autoscaling.behaviour.scaleDown.extraPolicies }}
+      - type: {{ .type }}
+        value: {{ .value }}
+        periodSeconds: {{ .periodSeconds }}
+      {{- end }}
+      selectPolicy: {{ .Values.autoscaling.behaviour.scaleDown.selectPolicy }}
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.behaviour.scaleUp.stabilizationWindowSeconds }}
+      policies:
+      - type: Percent
+        value: {{ .Values.autoscaling.behaviour.scaleUp.policies.value }}
+        periodSeconds: {{ .Values.autoscaling.behaviour.scaleUp.policies.periodSeconds }}
+      {{- range .Values.autoscaling.behaviour.scaleUp.extraPolicies }}
+      - type: {{ .type}}
+        value: {{ .value }}
+        periodSeconds: {{ .periodSeconds }}
+      {{- end }}
+      selectPolicy: {{ .Values.autoscaling.behaviour.scaleUp.selectPolicy }}
+{{- end }}

@@ -1,0 +1,63 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.app.name  }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.app.name  }}
+  annotations:
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/ssl-policy: 'ELBSecurityPolicy-TLS13-1-2-2021-06'
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificate.arn }}
+    {{- if .Values.ingress.group.enabled }}
+    alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.group.name }}
+    {{- end }}
+    {{- if .Values.ingress.internal }}
+    alb.ingress.kubernetes.io/scheme: internal
+    {{- else }}
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    {{- end }}
+    alb.ingress.kubernetes.io/target-type: ip
+    {{- if .Values.ingress.extraAnnotations }}
+{{ toYaml .Values.ingress.extraAnnotations | indent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: alb
+  rules:
+{{- if .Values.ingress.hostname }}
+  - host: {{ .Values.ingress.hostname }}
+{{- else }}
+  - host: {{ .Release.Namespace }}-{{ .Values.app.name }}.{{ .Values.app.domainName }}
+{{- end }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ .Values.app.name  }}-ext
+            port:
+              number: {{ .Values.externalService.port }}
+        path: {{ .Values.ingress.path }}
+        pathType: {{ .Values.ingress.pathType }}
+{{- range .Values.ingress.extraPaths }}
+      - backend:
+          service:
+            name: {{ .service.name }}
+            port:
+              number: {{ .service.port }}
+        path: {{ .path }}
+        pathType: {{ .pathType }}
+{{- end }}
+{{- range .Values.ingress.extraRules }}
+  - host: {{ .hostname }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ .service.name  }}
+            port:
+              number: {{ .service.port }}
+        path: {{ .path }}
+        pathType: {{ .pathType }}
+{{- end }}
+{{- end }}

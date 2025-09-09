@@ -1,0 +1,19 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Values.app.name  }}
+    namespace: {{ .Release.Namespace }}
+    {{- if .Values.service.additionalLabels }}
+{{ toYaml .Values.service.additionalLabels | indent 4 }}
+    {{- end }}
+  name: {{ .Values.app.name  }}
+spec:
+  ports:
+  - name: "internal"
+    port: {{ .Values.service.port }}
+    targetPort: {{ .Values.deployment.containers.containerPort }}
+  selector:
+    app: {{ .Values.app.name  }}
+{{- end }}

@@ -1,0 +1,92 @@
+{{- if .Values.scaledobject.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .Values.app.name  }}
+  {{- if .Values.scaledobject.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.scaledobject.annotations }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    name: {{ .Values.app.name  }}
+    {{- if .Values.scaledobject.app.version }}
+    apiVersion: {{ .Values.scaledobject.app.version  }}
+    {{- end }}
+    {{- if .Values.scaledobject.app.type }}
+    kind: {{ .Values.scaledobject.app.type  }}
+    {{- end }}
+    {{- if .Values.scaledobject.app.containername }}
+    envSourceContainerName: {{ .Values.scaledobject.app.containername  }}
+    {{- end }}
+  {{- if .Values.scaledobject.app.pollingInterval }}
+  pollingInterval: {{ .Values.scaledobject.app.pollingInterval  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.cooldownPeriod }}
+  cooldownPeriod: {{ .Values.scaledobject.app.cooldownPeriod  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.initialCooldownPeriod }}
+  initialCooldownPeriod: {{ .Values.scaledobject.app.initialCooldownPeriod  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.idleReplicaCount }}
+  idleReplicaCount: {{ .Values.scaledobject.app.idleReplicaCount  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.minReplicaCount }}
+  minReplicaCount: {{ .Values.scaledobject.app.minReplicaCount  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.maxReplicaCount }}
+  maxReplicaCount: {{ .Values.scaledobject.app.maxReplicaCount  }}
+  {{- end }}
+  {{- if .Values.scaledobject.app.fallback.enabled }}
+  fallback:
+    failureThreshold: {{ .Values.scaledobject.app.fallback.failureThreshold  }}
+    replicas: {{ .Values.scaledobject.app.fallback.replicas  }}
+  {{- end }}
+  {{- if .Values.scaledobject.advanced.enabled }}
+  advanced:
+    {{- if .Values.scaledobject.advanced.restoreToOriginalReplicaCount }}
+    restoreToOriginalReplicaCount: {{ .Values.scaledobject.advanced.restoreToOriginalReplicaCount  }}
+    {{- end }}
+    horizontalPodAutoscalerConfig:
+      behavior:
+        {{- if .Values.scaledobject.advanced.behavior.scaleDown.enabled }}
+        scaleDown:
+          policies:
+          {{- range .Values.scaledobject.advanced.behavior.scaleDown.policies }}
+          - type: {{ .type}}
+            value: {{ .value }}
+            periodSeconds: {{ .periodSeconds }}
+          {{- end }}
+          selectPolicy: {{ .Values.scaledobject.advanced.behavior.scaleDown.selectPolicy  }}
+          stabilizationWindowSeconds: {{ .Values.scaledobject.advanced.behavior.scaleDown.stabilizationWindowSeconds  }}
+        {{- end }}
+        {{- if .Values.scaledobject.advanced.behavior.scaleUp.enabled }}
+        scaleUp:
+          policies:
+          {{- range .Values.scaledobject.advanced.behavior.scaleUp.policies }}
+          - type: {{ .type}}
+            value: {{ .value }}
+            periodSeconds: {{ .periodSeconds }}
+          {{- end }}
+          selectPolicy: {{ .Values.scaledobject.advanced.behavior.scaleUp.selectPolicy  }}
+          stabilizationWindowSeconds: {{ .Values.scaledobject.advanced.behavior.scaleUp.stabilizationWindowSeconds  }}
+        {{- end }}
+  {{- end }}
+  {{- if .Values.scaledobject.triggers }}
+  triggers:
+  {{- range .Values.scaledobject.triggers }}
+  - type: {{ .type }}
+  {{- if .metricType }}
+    metricType: {{ .metricType }}
+  {{- end }}
+    metadata: 
+      {{- range $key, $value := .metadata }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  {{- end }}
+  {{- else }}
+  triggers: []
+  {{- end }}
+{{- end }}

@@ -1,0 +1,167 @@
+app:
+  name: app-name
+  env: "dev"
+  namespace: "paig"
+  domainName: "privacera.in"
+
+image:
+  hub: 404161567776.dkr.ecr.us-east-1.amazonaws.com
+  repository: paig/app-name
+  tag: main-0.0.1-SNAPSHOT-latest
+  pullPolicy: Always
+
+deployment:
+  enabled: true
+  topologySpreadConstraints:
+    enabled: false
+  affinity:
+    enabled: false
+    key: appname
+    value: nodelabel
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicaCount: 1
+  terminationGracePeriodSeconds: 30
+  securityContext:
+    enabled: true
+    fsGroup: 200
+  containers:
+    containerPort: 8080
+    securityContext:
+      enabled: false
+      readOnlyRootFilesystem: false
+    resources:
+      enabled: true
+      limits:
+        enabled: false
+        cpu:
+          enabled: false
+          value: "1000m"
+        memory:
+          value: 2Gi
+      requests:
+        cpu: "100m"
+        memory: 2Gi
+    readinessProbe:
+      enabled: true
+      httpGet:
+        path: /healthcheck/status
+      initialDelaySeconds: 5
+      periodSeconds: 20
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 5
+    appConf:
+      enabled: true
+      mountPath: /workdir/{{ .Values.app.name }}/cust-conf
+
+serviceAccount:
+  enabled: false
+
+autoscaling:
+  enabled: false
+  replicaCountMin: 1
+  replicaCountMax: 3
+  cpu:
+    averageUtilization: 80
+  memory:
+    enabled: true
+    averageUtilization: 80
+  behaviour:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        value: 100
+        periodSeconds: 15
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        value: 100
+        periodSeconds: 15
+      selectPolicy: Max
+
+service:
+  enabled: true
+  port: 8080
+
+externalService:
+  enabled: false
+  port: 8080
+
+# Ingress will point to an external service,
+# so enabling this should also require to enable externalService.
+ingress:
+  enabled: false
+  internal: true
+  hostname: ""
+  certificate:
+    arn: ""
+  group:
+    enabled: false
+    name: ""
+  path: /
+  pathType: Prefix
+
+PodDisruptionBudget:
+  enabled: true
+
+scaledobject:
+  enabled: false
+  annotations: {}
+  app:
+    version: apps/v1
+    type: Deployment
+    pollingInterval: 30
+    cooldownPeriod: 300
+    initialCooldownPeriod: 300
+    idleReplicaCount: 0
+    minReplicaCount: 1
+    maxReplicaCount: 5
+    fallback: 
+      enabled: false
+      failureThreshold: 3
+      replicas: 6
+  advanced:
+    enabled: false
+    restoreToOriginalReplicaCount: false
+    behavior:
+      scaleDown:
+        enabled: true
+        policies:
+        - type: Percent
+          value: 20
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+        selectPolicy: Min
+        stabilizationWindowSeconds: 1800
+      scaleUp:
+        enabled: true
+        policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 15
+        - type: Pods
+          value: 2
+          periodSeconds: 15
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+  triggers: []
+  # Add triggers as per your requirement 
+  # ref1: https://keda.sh/docs/2.15/reference/scaledobject-spec/#triggers
+  # ref2: https://keda.sh/docs/2.15/scalers/
+  # e.g.
+  # triggers:
+  # - type: prometheus
+  #   metadata:
+  #     serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
+  #     query: some-promql-query
+  #     threshold: "400"
+  # - type: cpu
+  #   metricType: Utilization
+  #   metadata:
+  #     value: "70"

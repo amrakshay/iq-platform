@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 0.9.0
+description: A base helm Chart for all PAIG applications
+name: privacera-base
+type: application
+version: 0.9.0

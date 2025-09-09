@@ -1,0 +1,19 @@
+{{- if .Values.externalService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Values.app.name  }}
+    namespace: {{ .Release.Namespace }}
+    {{- if .Values.externalService.additionalLabels }}
+{{ toYaml .Values.externalService.additionalLabels | indent 4 }}
+    {{- end }}
+  name: {{ .Values.app.name  }}-ext
+spec:
+  ports:
+  - name: "external"
+    port: {{ .Values.externalService.port }}
+    targetPort: {{ .Values.deployment.containers.containerPort }}
+  selector:
+    app: {{ .Values.app.name  }}
+{{- end }}

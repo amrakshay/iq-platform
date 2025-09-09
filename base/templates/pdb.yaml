@@ -1,0 +1,22 @@
+{{- if .Values.PodDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.app.name }}-pdb
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if .Values.PodDisruptionBudget.spec }}
+  {{ toYaml .Values.PodDisruptionBudget.spec | indent 2 }}
+  {{- else if eq (int .Values.deployment.replicaCount) 1 }}
+  maxUnavailable: 1
+  {{- else if eq (int .Values.deployment.replicaCount) 2 }}
+  maxUnavailable: 1
+  {{- else if or (eq (int .Values.deployment.replicaCount) 3) (eq (int .Values.deployment.replicaCount) 4) }}
+  minAvailable: 1
+  {{- else if ge (int .Values.deployment.replicaCount) 5 }}
+  minAvailable: "70%"
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name }}
+{{- end }}

@@ -1,0 +1,136 @@
+{{- if .Values.deployment.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.app.name }}
+  name: {{ .Values.app.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.deployment.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.updateStrategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.updateStrategy.rollingUpdate.maxUnavailable }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name  }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.name  }}
+    spec:
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      {{- if .Values.deployment.topologySpreadConstraints.enabled }}
+      topologySpreadConstraints:
+      - maxSkew: {{ .Values.deployment.topologySpreadConstraints.maxSkew }}
+        topologyKey: {{ .Values.deployment.topologySpreadConstraints.topologyKey }}
+        whenUnsatisfiable: {{ .Values.deployment.topologySpreadConstraints.whenUnsatisfiable }}
+        labelSelector:
+        {{ toYaml . | indent 2 }}
+      {{- end }}
+      {{- if .Values.deployment.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .Values.deployment.affinity.key }}
+                operator: In
+                values:
+                - {{ .Values.deployment.affinity.value }}
+      {{- end }}
+      {{- if .Values.deployment.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.deployment.securityContext.fsGroup }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.deployment.initContainers }}
+      initContainers:
+      {{- range .Values.deployment.initContainers }}
+      - name: {{ .name }}
+        image: {{ .image }}
+        command: {{ .command | toYaml | nindent 8 }}
+        {{- if .env }}
+        env:
+        {{- range $key, $value := .env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+      containers:
+      - image: "{{ .Values.image.hub }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        name: {{ .Values.app.name  }}
+{{- if .Values.deployment.containers.securityContext.enabled }}
+        securityContext:
+          readOnlyRootFilesystem: {{ .Values.deployment.containers.securityContext.readOnlyRootFilesystem }}
+  {{- end }}
+        imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+        ports:
+        - containerPort: {{ .Values.deployment.containers.containerPort }}
+        {{- if or .Values.deployment.containers.env .Values.deployment.containers.envFromSecret }}
+        env:
+        {{- range $key, $value := .Values.deployment.containers.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- if .Values.deployment.containers.envFromSecret }}
+        {{- range $envName, $secretKey := .Values.deployment.containers.envFromSecret.keys }}
+        - name: {{ $envName }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.deployment.containers.envFromSecret.secretName }}
+              key: {{ $secretKey }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+{{- if .Values.deployment.containers.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.deployment.containers.readinessProbe.httpGet.path}}
+            port: {{ .Values.deployment.containers.containerPort }}
+          initialDelaySeconds: {{ .Values.deployment.containers.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.deployment.containers.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.deployment.containers.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.deployment.containers.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.deployment.containers.readinessProbe.failureThreshold }}
+{{- end }}
+{{- if .Values.deployment.containers.resources.enabled }}
+        resources:
+{{- if .Values.deployment.containers.resources.limits.enabled }}
+          limits:
+            memory: {{ .Values.deployment.containers.resources.limits.memory.value | quote }}
+          {{- if .Values.deployment.containers.resources.limits.cpu.enabled }}
+            cpu: {{ .Values.deployment.containers.resources.limits.cpu.value | quote }}
+          {{- end }}
+{{- end }}
+          requests:
+            memory: {{ .Values.deployment.containers.resources.requests.memory | quote }}
+            cpu: {{ .Values.deployment.containers.resources.requests.cpu | quote }}
+{{- else }}
+        resources: {}
+{{- end }}
+{{- if .Values.deployment.containers.appConf.enabled }}
+        volumeMounts:
+        - mountPath: {{ .Values.deployment.containers.appConf.mountPath }}
+          name: app-conf
+{{- end }}
+      restartPolicy: Always
+{{- if .Values.deployment.containers.appConf.enabled }}
+      volumes:
+      - name: app-conf
+        configMap:
+          name: {{ .Values.app.name }}-conf
+{{- end }}
+{{- end }}
